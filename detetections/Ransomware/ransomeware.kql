@@ -1,0 +1,35 @@
+let lookback = 30m;
+let file_threshold = 100;
+let suspicious_processes = dynamic(["vssadmin.exe","wbadmin.exe","powershell.exe","cmd.exe"]);
+// File Activity Spike
+let file_activity =
+DeviceFileEvents
+| where Timestamp > ago(lookback)
+| summarize file_modifications = count() by DeviceName, InitiatingProcessFileName
+| where file_modifications > file_threshold
+| extend file_score = 2;
+// Suspicious Process Execution
+let process_activity =
+DeviceProcessEvents
+| where Timestamp > ago(lookback)
+| where FileName in~ (suspicious_processes)
+| extend process_score = 2
+| summarize process_score = max(process_score) by DeviceName;
+// Shadow Copy Deletion (High Signal)
+let shadow_activity =
+DeviceProcessEvents
+| where Timestamp > ago(lookback)
+| where ProcessCommandLine has_any ("vssadmin delete shadows", "wmic shadowcopy delete")
+| extend shadow_score = 4
+| summarize shadow_score = max(shadow_score) by DeviceName;
+// Combine Signals
+file_activity
+| join kind=fullouter process_activity on DeviceName
+| join kind=fullouter shadow_activity on DeviceName
+| extend total_score = coalesce(file_score,0) + coalesce(process_score,0) + coalesce(shadow_score,0)
+| extend confidence = case(
+    total_score >= 6, "High",
+    total_score >= 3, "Medium",
+    "Low"
+)
+| where total_score >= 3
