@@ -1,0 +1,17 @@
+let lookback = 1h;
+let port_threshold = 20;
+let ip_threshold = 15;
+let connection_threshold = 50;
+DeviceNetworkEvents
+| where Timestamp > ago(lookback)
+| where ActionType in ("ConnectionSuccess", "ConnectionFailed")
+| where not(ipv4_is_private(RemoteIP))
+| project Timestamp, DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName
+| summarize 
+    unique_ports = dcount(RemotePort),
+    unique_ips = dcount(RemoteIP),
+    total_connections = count()
+    by DeviceName, InitiatingProcessFileName, bin(Timestamp, 5m)
+| where unique_ports > port_threshold 
+   or unique_ips > ip_threshold
+| where total_connections > connection_threshold
