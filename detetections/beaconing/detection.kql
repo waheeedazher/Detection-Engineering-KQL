@@ -1,0 +1,25 @@
+let lookback = 1d;
+let min_connections = 20;
+let stdev_threshold = 5;
+let jitter_tolerance = 0.2;
+DeviceNetworkEvents
+| where Timestamp > ago(lookback)
+| where ActionType == "ConnectionSuccess"
+| where not(ipv4_is_private(RemoteIP))
+| project Timestamp, DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName, SentBytes
+| sort by DeviceName, RemoteIP, RemotePort, Timestamp asc
+| serialize
+| extend prev_time = prev(Timestamp)
+| extend delta = datetime_diff('second', Timestamp, prev_time)
+| where isnotnull(delta)
+| summarize 
+    connection_count = count(),
+    avg_delta = avg(delta),
+    stdev_delta = stdev(delta),
+    avg_bytes = avg(SentBytes),
+    stdev_bytes = stdev(SentBytes)
+    by DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName
+| where connection_count >= min_connections
+| where stdev_delta < stdev_threshold
+| extend jitter_ratio = stdev_delta / avg_delta
+| where jitter_ratio < jitter_tolerance
