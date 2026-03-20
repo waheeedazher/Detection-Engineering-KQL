@@ -7,9 +7,9 @@ Some analyses are derived from operational scenarios and have been sanitized to 
 ### Case Studies
 
 #### 1. MITRE ATT&CK Mapping Study
-
-* Maps attacker techniques to available Sentinel telemetry
-* Highlights coverage strengths and blind spots
+* Example attacker activity or command
+* Relevant telemetry sources within Microsoft Sentinel
+* Detection logic and example KQL queries
 
 #### 2. Detection Gap Analysis
 
