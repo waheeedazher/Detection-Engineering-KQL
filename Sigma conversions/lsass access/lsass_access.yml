@@ -1,0 +1,11 @@
+title: LSASS Access Detection
+id: 123e4567-e89b-12d3-a456-426614174000
+status: experimental
+logsource:
+  product: windows
+  category: process_access
+detection:
+  selection:
+    TargetImage|endswith: '\lsass.exe'
+  condition: selection
+level: high
