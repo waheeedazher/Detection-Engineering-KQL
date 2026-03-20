@@ -63,9 +63,9 @@ Interpretation in Sentinel:
 
 ## Key Insight
 
-Mapping is not 1:1 translation.
+Mapping is not direct translation.
 
 It requires:
-- Understanding of telemetry gaps
+- Adjust according to environment telmentry
 - Context-driven approximation
 - Detection intent preservation
