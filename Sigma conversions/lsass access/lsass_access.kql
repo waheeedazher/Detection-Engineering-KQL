@@ -1,0 +1,34 @@
+/// ========================================
+// 1. Raw Sigma Conversion (Unmodified)
+// ========================================
+
+// Output generated using Sigma CLI (kusto backend)
+// This represents direct translation without environment adaptation
+
+// Not production-ready
+
+TargetImage endswith "\\lsass.exe
+
+
+// ========================================
+// 2. Refined Detection Logic (Sentinel Adapted)
+// ========================================
+
+// Adjustments:
+// - Mapped Sigma fields to Sentinel schema
+// - Introduced context to reduce false positives
+// - Focus shifted from execution → suspicious interaction
+
+
+DeviceProcessEvents
+| where ProcessCommandLine has "lsass"
+| where InitiatingProcessFileName !in ("lsass.exe", "wininit.exe")
+
+
+// ========================================
+// 3. Key Improvements
+// ========================================
+
+// - Replaced generic field (TargetImage) with Sentinel fields
+// - Introduced exclusion logic for system processes
+// - Improved detection intent (interaction vs execution)
