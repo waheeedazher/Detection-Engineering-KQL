@@ -1,0 +1,46 @@
+/// ========================================
+// 1. Raw Sigma Conversion (Unmodified)
+// ========================================
+
+// Output generated using Sigma CLI (kusto backend)
+// This represents direct translation without environment adaptation
+
+// Not production-ready
+
+((EventID == 30 and (SearchFilter contains "(groupType:1.2.840.113556.1.4.803:=2147483648)" or SearchFilter contains "(groupType:1.2.840.113556.1.4.803:=2147483656)" or SearchFilter contains "(groupType:1.2.840.113556.1.4.803:=2147483652)" or SearchFilter contains "(groupType:1.2.840.113556.1.4.803:=2147483650)" or SearchFilter contains "(sAMAccountType=805306369)" or SearchFilter contains "(sAMAccountType=805306368)" or SearchFilter contains "(sAMAccountType=536870913)" or SearchFilter contains "(sAMAccountType=536870912)" or SearchFilter contains "(sAMAccountType=268435457)" or SearchFilter contains "(sAMAccountType=268435456)" or SearchFilter contains "(objectCategory=groupPolicyContainer)" or SearchFilter contains "(objectCategory=organizationalUnit)" or SearchFilter contains "(objectCategory=nTDSDSA)" or SearchFilter contains "(objectCategory=server)" or SearchFilter contains "(objectCategory=domain)" or SearchFilter contains "(objectCategory=person)" or SearchFilter contains "(objectCategory=group)" or SearchFilter contains "(objectCategory=user)" or SearchFilter contains "(objectClass=trustedDomain)" or SearchFilter contains "(objectClass=computer)" or SearchFilter contains "(objectClass=server)" or SearchFilter contains "(objectClass=group)" or SearchFilter contains "(objectClass=user)" or SearchFilter contains "(primaryGroupID=521)" or SearchFilter contains "(primaryGroupID=516)" or SearchFilter contains "(primaryGroupID=515)" or SearchFilter contains "(primaryGroupID=512)" or SearchFilter contains "Domain Admins" or SearchFilter contains "objectGUID=*" or SearchFilter contains "(schemaIDGUID=*)" or SearchFilter contains "admincount=1")) and (not((EventID == 30 and ((SearchFilter contains "(domainSid=" and SearchFilter contains ")") or (SearchFilter contains "(objectSid=" and SearchFilter contains ")")))))) or (EventID == 30 and (SearchFilter contains "(userAccountControl:1.2.840.113556.1.4.803:=4194304)" or SearchFilter contains "(userAccountControl:1.2.840.113556.1.4.803:=2097152)" or SearchFilter contains "!(userAccountControl:1.2.840.113556.1.4.803:=1048574)" or SearchFilter contains "(userAccountControl:1.2.840.113556.1.4.803:=524288)" or SearchFilter contains "(userAccountControl:1.2.840.113556.1.4.803:=65536)" or SearchFilter contains "(userAccountControl:1.2.840.113556.1.4.803:=8192)" or SearchFilter contains "(userAccountControl:1.2.840.113556.1.4.803:=544)" or SearchFilter contains "!(UserAccountControl:1.2.840.113556.1.4.803:=2)" or SearchFilter contains "msDS-AllowedToActOnBehalfOfOtherIdentity" or SearchFilter contains "msDS-AllowedToDelegateTo" or SearchFilter contains "msDS-GroupManagedServiceAccount" or SearchFilter contains "(accountExpires=9223372036854775807)" or SearchFilter contains "(accountExpires=0)" or SearchFilter contains "(adminCount=1)" or SearchFilter contains "ms-MCS-AdmPwd")) or (EventID == 30 and SearchFilter =~ "(objectclass=*)" and (DistinguishedName contains "CN=Domain Admins" or DistinguishedName contains "CN=Enterprise Admins" or DistinguishedName contains "CN=Group Policy Creator Owners"))
+
+// ========================================
+// 2. Refined Detection Logic (Sentinel Adapted)
+// ========================================
+
+// Adjustments:
+// - Mapped Sigma fields to Sentinel schema
+// - considered pipelines to ensure logs are ingested
+// - Focus shifted artifacts to behaviours
+
+
+// ========================================
+// LDAP Reconnaissance (Behavioral Approximation)
+// Data Source: Windows Security Logs (Event ID 4662)
+// ========================================
+
+// Detect high-volume directory object access indicative of enumeration
+
+let timeframe = 5m;
+let threshold = 50;
+SecurityEvent
+| where EventID == 4662
+| where ObjectType has_any ("user", "group", "domainDNS", "organizationalUnit")
+| where ObjectName has_any ("Domain Admins", "Enterprise Admins")
+| where SubjectAccount !endswith "$"   // exclude machine accounts
+| summarize AccessCount = count() by SubjectAccount, Computer, bin(TimeGenerated, timeframe)
+| where AccessCount > threshold
+| sort by AccessCount desc
+
+// ========================================
+// 3. Key Improvements
+// ========================================
+
+// - targetted using threshold values and timeframe
+// - Introduced exclusion logic for machine services
+// - Improved detection intent (interaction vs execution)
